@@ -6,7 +6,7 @@ The code snippets are compiled in a jupyter notebook, and described with markdow
 Future to-do:
 - split in several notebooks, per theme / user level
 - create a jupyter notebook "extension" to access the code snippets directly in jupyter's gui 
-
+(https://jupyter-contrib-nbextensions.readthedocs.io/en/latest/nbextensions/snippets_menu/readme.html#more-complicated-snippets)
 
 ### Some examples
 
