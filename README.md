@@ -37,3 +37,11 @@ act = [a for a in bw2.Database(db_name)
       ] 
 act
 ```
+... more in the bw2-snippets.ipynb notebook 
+
+
+### While we are here... a compilation of bw2 tutorials
+
+    1. https://github.com/PoutineAndRosti/Brightway-Seminar-2017
+    - https://github.com/maxkoslowski/Brightway2_Intro/blob/master/BW2_tutorial.ipynb
+    - 
