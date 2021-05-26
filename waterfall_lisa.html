@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+  <meta charset="utf-8">
+ <style>
+ @import url(https://fonts.googleapis.com/css?family=Muli:400,300);
+ body {
+  font-family: 'Muli', sans-serif;
+  background-color: #F4F4F4;
+}
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+.y.axis path {
+    display: none;
+    /*stroke-opacity: 0.2;*/
+}
+.y.axis line {
+    display: none;
+    /*stroke-opacity: 0.2;*/
+}
+.top.axis path {
+    display: none;
+}
+.starting-line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+ </style>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  
+</head>
+ 
+<body>
+ 
+<div id="waterfall">
+</div>
+
+<div id="slider">
+
+<!-- insert sliders here -->	
+LHVWoodchips : <input type="range" name="range_LHVWoodchips" min="13.229999999999999" max="24.57" step = "0.11340000000000001"  onchange="updateAll(this.value, this.name);"><input type="text" id="txt_LHVWoodchips" value="" onchange="updateAll(this.value, this.id);"><br />PowerEfficiency : <input type="range" name="range_PowerEfficiency" min="0.231" max="0.42900000000000005" step = "0.0019800000000000004"  onchange="updateAll(this.value, this.name);"><input type="text" id="txt_PowerEfficiency" value="" onchange="updateAll(this.value, this.id);"><br />TransportDistanceBiomass : <input type="range" name="range_TransportDistanceBiomass" min="200.0" max="800.0" step = "6.0"  onchange="updateAll(this.value, this.name);"><input type="text" id="txt_TransportDistanceBiomass" value="" onchange="updateAll(this.value, this.id);"><br />ThermalEfficiency : <input type="range" name="range_ThermalEfficiency" min="0.48999999999999994" max="0.9099999999999999" step = "0.0042"  onchange="updateAll(this.value, this.name);"><input type="text" id="txt_ThermalEfficiency" value="" onchange="updateAll(this.value, this.id);"><br />
+</div>
+<script>
+
+// GLOBAL VARIABLES & INITIAL VALUE : insert from python
+<!-- insert glo_var here -->
+var LHVWoodchips = 18.9; var PowerEfficiency = 0.33; var TransportDistanceBiomass = 500.0; var ThermalEfficiency = 0.7;
+// global variable can be called via string using window()
+console.log(window["LHVWoodchips"]);
+// window["LHVWoodchips"]=23;
+
+// TO CREATE IN CODE
+var elec_switch_param_elecCoal = 1;
+var elec_switch_param_elecWindpower = 0;
+var elec_switch_param_elecMix = 0;
+var elec_switch_param_elecNaturalGas = 0;
+
+
+<!-- insert contrib_equation here -->
+var contrib_equation = [{ name : "se land use", value : 0.890999984741211/(LHVWoodchips*ThermalEfficiency)}, { name : "se electricity", value : -2.91942585523369*PowerEfficiency*elec_switch_param_elecCoal/ThermalEfficiency - 0.0833897821460776*PowerEfficiency*elec_switch_param_elecMix/ThermalEfficiency - 2.08667435336886*PowerEfficiency*elec_switch_param_elecNaturalGas/ThermalEfficiency - 0.0426446181540455*PowerEfficiency*elec_switch_param_elecWindpower/ThermalEfficiency}, { name : "biomass production", value : 0.203391733736845/(LHVWoodchips*ThermalEfficiency)}, { name : "combustion/pyrolysis", value : 0.0191549993515015/ThermalEfficiency + 1.0412859915417e-5*TransportDistanceBiomass/(LHVWoodchips*ThermalEfficiency) + 0.000105099330788413*elec_switch_param_elecCoal/(LHVWoodchips*ThermalEfficiency) + 3.00203215725879e-6*elec_switch_param_elecMix/(LHVWoodchips*ThermalEfficiency) + 7.5120276721279e-5*elec_switch_param_elecNaturalGas/(LHVWoodchips*ThermalEfficiency) + 1.53520625354564e-6*elec_switch_param_elecWindpower/(LHVWoodchips*ThermalEfficiency) + 0.00351863411671354/(LHVWoodchips*ThermalEfficiency)}, { name : "transportation", value : 0.00166605758646672*TransportDistanceBiomass/(LHVWoodchips*ThermalEfficiency)}, ];
+
+
+function updateAll(val, NameOrId){
+	console.log(NameOrId, val)
+	
+	// reset figure div
+	document.getElementById('waterfall').innerHTML='';
+	
+	// update text input area with updated value (if update was made by range slider)
+	paramName = NameOrId.split("_")[1];
+	document.getElementById('txt_'+paramName).value=val;
+	
+	// update variable 
+	window[paramName]=val
+	
+	// recalculate contributions
+	var contrib_equation = [{ name : "se land use", value : 0.890999984741211/(LHVWoodchips*ThermalEfficiency)}, { name : "se electricity", value : -2.91942585523369*PowerEfficiency*elec_switch_param_elecCoal/ThermalEfficiency - 0.0833897821460776*PowerEfficiency*elec_switch_param_elecMix/ThermalEfficiency - 2.08667435336886*PowerEfficiency*elec_switch_param_elecNaturalGas/ThermalEfficiency - 0.0426446181540455*PowerEfficiency*elec_switch_param_elecWindpower/ThermalEfficiency}, { name : "biomass production", value : 0.203391733736845/(LHVWoodchips*ThermalEfficiency)}, { name : "combustion/pyrolysis", value : 0.0191549993515015/ThermalEfficiency + 1.0412859915417e-5*TransportDistanceBiomass/(LHVWoodchips*ThermalEfficiency) + 0.000105099330788413*elec_switch_param_elecCoal/(LHVWoodchips*ThermalEfficiency) + 3.00203215725879e-6*elec_switch_param_elecMix/(LHVWoodchips*ThermalEfficiency) + 7.5120276721279e-5*elec_switch_param_elecNaturalGas/(LHVWoodchips*ThermalEfficiency) + 1.53520625354564e-6*elec_switch_param_elecWindpower/(LHVWoodchips*ThermalEfficiency) + 0.00351863411671354/(LHVWoodchips*ThermalEfficiency)}, { name : "transportation", value : 0.00166605758646672*TransportDistanceBiomass/(LHVWoodchips*ThermalEfficiency)}, ];
+	console.log(contrib_equation)
+
+	// plotting 
+		function process_data(data){
+		  var prev_end = 0;
+		  var new_data = [];
+		  var stages = [];
+		  for(d in data){
+			name = data[d].name
+			value =  data[d].value;
+			start = prev_end;
+			end = prev_end + value;
+			left = Math.min(start, end);
+			right = Math.max(start, end)
+			this_line = {name: name, value: value, start:start, end: end, left:left, right:right}
+			prev_end += value
+			new_data.push(this_line);
+			stages.push(name)
+		  };
+		  return [new_data, stages];
+		}
+		var processed = process_data(contrib_equation);
+		var segments = processed[0],
+			stages = processed[1];
+		var margin = {left:20, right:70, top:20, bottom:20},
+			yAxisWidth = 110,
+			xAxisHeight = 21,
+			chartWidth = 500,
+			xScale = d3.scale.linear(),
+			yScale = d3.scale.ordinal(),
+			segmentHeight = 44,
+			segmentPadding = segmentHeight/3,
+			svg = null,
+			colour_plus = 'pink'//'#f0f8ff',
+			colour_minus = 'lightgreen',
+			labelFormat = d3.format(",.3r"), //d3.format("^.2g")
+			unit="kgCO2-eq";
+		var chartHeight = (segmentHeight + segmentPadding) * segments.length;
+		var minVal = d3.min(segments, function (d) {
+				return d.left;
+			}),
+			maxVal = d3.max(segments, function (d) {
+				return d.right;
+			});
+		xScale.range([0, chartWidth]).nice();
+		xScale.domain([minVal, maxVal]);
+		console.log(stages);
+		yScale.domain(stages);
+		yScale.rangeRoundBands([0, chartHeight], 0.1);
+		//yScale.range([0, chartHeight]);
+		function setGraphicAttributes(seg, index) {
+			seg.x = xScale(seg.left); //Math.min(seg.startVal, seg.endVal)
+			seg.y = (segmentPadding + segmentHeight) * index;
+			seg.width = Math.abs(xScale(seg.value) - xScale(0));
+			seg.endX = xScale(seg.end);
+			if (Math.abs(seg.value)/Math.abs(maxVal-minVal) > 0.15){
+				seg.labelX = xScale(seg.right - Math.abs(seg.value/2));
+				seg.labelAnchor = "middle";
+			}else{
+				seg.labelX = xScale(seg.right) + 5;
+				seg.labelAnchor = "right";
+			}
+			
+		}
+		for(i=0; i<segments.length; i++){
+		  setGraphicAttributes(segments[i], i)
+		}
+		console.log(segments)
+		function createSvg(parentElement) {
+			svg = d3.select(parentElement).append("svg");
+			svg.append("g")
+				.attr("class", "chart-group")
+				.attr("transform", "translate(" + (margin.left + yAxisWidth) + "," + margin.top + ")");
+			// setSvgSize
+			svg.attr("width", chartWidth + yAxisWidth + margin.left + margin.right);
+			svg.attr("height", xAxisHeight + chartHeight + margin.top + margin.bottom);
+		}
+		function wrap(text, width) {
+			text.each(function() {
+				var text = d3.select(this),
+					words = text.text().split(/\s+/).reverse(),
+					word,
+					line = [],
+					lineNumber = 0,
+					lineHeight = 1.1, // ems
+					x = text.attr("x"),
+					y = text.attr("y"),
+					dy = parseFloat(text.attr("dy")),
+					tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em");
+				while (word = words.pop()) {
+					line.push(word);
+					tspan.text(line.join(" "));
+					if (tspan.node().getComputedTextLength() > width) {
+						line.pop();
+						tspan.text(line.join(" "));
+						line = [word];
+						tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+					}
+				}
+			});
+		}
+		function drawXAxis() {
+			var tickValues = [], maxTickVal;
+			svg.select(".x.axis").remove();
+			if (chartHeight > 0 && segments && segments.length > 0) {
+				var xAxis = d3.svg.axis()
+						.scale(xScale)
+						.orient("bottom"),
+					minVal = d3.min(segments, function (d) {
+						return d.end;
+					}),
+					maxVal = d3.max(segments, function (d) {
+						return d.end;
+					});
+				var lastVal = segments[segments.length-1].end;
+				if (minVal > 0) {
+					minVal = 0;
+				}
+				else if (maxVal < 0) {
+					maxVal = 0;
+				}
+				tickValues = [lastVal];
+				if (lastVal !== 0 ) {
+					addTick(0, tickValues);
+				}
+				if (maxVal !== 0) {
+					addTick(maxVal, tickValues);
+				}
+				if (minVal !== 0) {
+					addTick(minVal, tickValues);
+				}
+				maxTickVal = d3.max(tickValues);
+				xAxis.tickValues(tickValues)
+					.tickFormat(function (d) {
+						var formatted;
+						switch(d) {
+							case maxTickVal :
+								formatted =  labelFormat(d) + " " + unit;
+								break;
+							case 0 :
+								formatted = "0";
+								break;
+							default :
+								formatted = labelFormat(d);
+						}
+						return formatted;
+					});
+				svg.select(".chart-group")
+					.append("g")
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + chartHeight + ")")
+					.call(xAxis);
+			}
+		}
+		// checks to see if the tick values are too close together - very smart!
+		function addTick( val, tickValues) {
+			if ( tickValues.every( function (tv) {
+				return (Math.abs(xScale(tv) - xScale(val)) > 50 );
+			}) ) {
+				tickValues.push(val);
+			}
+		}
+		function drawYAxis() {
+			var padding = -15;
+			svg.select(".y.axis").remove();
+			if ( chartHeight > 0 ) {
+				var yAxis = d3.svg.axis()
+						.scale(yScale)
+						.orient("left")
+						.tickSize(1);
+				svg.select(".chart-group")
+					.append("g")
+					.attr("class", "y axis")
+					.attr("transform", "translate(" + padding + ",0)")
+					.call(yAxis)
+					.selectAll(".tick text")
+					.call(wrap, yAxisWidth - 10);
+			}
+		}
+		function defineEndMarker() {
+			// Define marker as red triangle
+			svg.append("defs").append("marker")
+				.attr("id", "arrowhead")
+				.attr("viewBox", "0 0 10 10")
+				.attr("refX", 10)
+				.attr("refY", 5)
+				.attr("markerWidth", 6)
+				.attr("markerHeight", 6)
+				.attr("orient", "auto")
+				.append("path")
+				.attr("d", "M 0 0 L 10 5 L 0 10 z")
+				.style("fill", d3.rgb(colour_plus).darker(2));
+		}
+		function drawStartingLine() {
+			svg.select(".top.axis").remove();
+			svg.select(".starting-line").remove();
+			if (chartHeight > 0) {
+				var xAxis = d3.svg.axis()
+					.scale(xScale)
+					.orient("top")
+					.tickValues([0])
+					.tickFormat(d3.format("d")),
+					x0 = xScale(0),
+					chartGroup = svg.select(".chart-group");
+				chartGroup.append("g")
+					.attr("class", "top axis")
+					.call(xAxis);
+				chartGroup.append("line")
+					.attr("class", "starting-line")
+					.attr("x1", x0)
+					.attr("y1", 0)
+					.attr("x2", x0)
+					.attr("y2", chartHeight);
+			}
+		}
+		function drawWaterfall() {
+			var chartGroup, barGroup,
+				lineColor = d3.rgb(colour_plus).darker(2);
+			chartGroup = svg.select(".chart-group");
+			if (segments && segments.length > 0) {
+				// Draw bars
+				barGroup = chartGroup.selectAll(".bar.g")
+					.data(segments);
+				barGroup.enter().append("g")
+					.attr("class", "bar g");
+				barGroup.exit().remove();
+				barGroup.append("rect")
+					.attr("class", "bar rect")
+					.attr("height", segmentHeight)
+					.attr("x", function (d) {
+						return d.x;
+					})
+					.attr("y", function (d) {
+						return d.y;
+					})
+					.attr("width", function (d) {
+						return d.width > 0 ? d.width : 0.1;
+					})
+					.style("fill", function(d){return d.value>0 ? colour_plus : colour_minus})//color)
+					.style("stroke", function(d){return d.value>0 ? d3.rgb(colour_plus).darker(2) : d3.rgb(colour_minus).darker(2)});//lineColor);
+				// Label bars
+				barGroup.append("text")
+					.attr("class", "bar text")
+					.attr("x", function (d) {
+						return d.labelX;
+					})
+					.style("text-anchor", function (d) {
+						return d.labelAnchor;
+					})
+					.attr("y", function (d) {
+						return d.y + (segmentHeight / 2);
+					})
+					.attr("dy", ".5em")
+					.text(function (d) {
+						return labelFormat(d.value);
+					});
+				// Connect bars
+				barGroup.append("line")
+					.attr("class", "bar line")
+					.attr("x1", function (d) {
+						return d.endX;
+					})
+					.attr("y1", function (d) {
+						return d.y + segmentHeight;
+					})
+					.attr("x2", function (d) {
+						return d.endX;
+					})
+					.attr("y2", function (d) {
+						return d.y + segmentHeight + segmentPadding;
+					})
+					.style("stroke", lineColor);
+			}
+		}
+		function drawEndMarker() {
+			var connectors = svg.selectAll(".bar.line");
+			if (connectors.size() > 0) {
+				var lastIndex = connectors.size() - 1;
+				console.log(connectors);
+				connectors.filter(function(d, i) { return i === lastIndex; })
+							.attr("marker-end", "url(#arrowhead)");
+			}
+		}
+
+	createSvg("#waterfall");
+	drawXAxis();
+	drawYAxis();
+	drawStartingLine();
+	drawWaterfall();
+	defineEndMarker();
+	drawEndMarker();
+
+}
+
+function updateTextInput(val) {
+          document.getElementById('waterfall').innerHTML='';
+          document.getElementById('textInput').value=val;
+            var EF_el = val/1000;
+            var original_data = [
+                                { name :"Pellet production", value : 4.6},
+                                { name :"Pyrolysis electricity",value : 7.7*EF_el},
+                                { name :"Electrical heating",value : 31.2*EF_el},
+                                { name :"Biochar C sequestration",value :-26.5}];
+            console.log(EF_el);
+            console.log(original_data);   
+                    function process_data(data){
+                      var prev_end = 0;
+                      var new_data = [];
+                      var stages = [];
+                      for(d in data){
+                        name = data[d].name
+                        value =  data[d].value;
+                        start = prev_end;
+                        end = prev_end + value;
+                        left = Math.min(start, end);
+                        right = Math.max(start, end)
+                        this_line = {name: name, value: value, start:start, end: end, left:left, right:right}
+                        prev_end += value
+                        new_data.push(this_line);
+                        stages.push(name)
+                      };
+                      return [new_data, stages];
+                    }
+
+                    var processed = process_data(original_data);
+                    var segments = processed[0],
+                        stages = processed[1];
+                    var margin = {left:20, right:70, top:20, bottom:20},
+                        yAxisWidth = 110,
+                        xAxisHeight = 21,
+                        chartWidth = 500,
+                        xScale = d3.scale.linear(),
+                        yScale = d3.scale.ordinal(),
+                        segmentHeight = 44,
+                        segmentPadding = segmentHeight/3,
+                        svg = null,
+                        colour_plus = 'pink'//'#f0f8ff',
+                        colour_minus = 'lightgreen',
+                        labelFormat = d3.format(",.3r"), //d3.format("^.2g")
+                        unit="kgCO2-eq";
+                    var chartHeight = (segmentHeight + segmentPadding) * segments.length;
+                    var minVal = d3.min(segments, function (d) {
+                            return d.left;
+                        }),
+                        maxVal = d3.max(segments, function (d) {
+                            return d.right;
+                        });
+                    xScale.range([0, chartWidth]).nice();
+                    xScale.domain([minVal, maxVal]);
+                    console.log(stages);
+                    yScale.domain(stages);
+                    yScale.rangeRoundBands([0, chartHeight], 0.1);
+                    //yScale.range([0, chartHeight]);
+                    function setGraphicAttributes(seg, index) {
+                        seg.x = xScale(seg.left); //Math.min(seg.startVal, seg.endVal)
+                        seg.y = (segmentPadding + segmentHeight) * index;
+                        seg.width = Math.abs(xScale(seg.value) - xScale(0));
+                        seg.endX = xScale(seg.end);
+                        if (Math.abs(seg.value)/Math.abs(maxVal-minVal) > 0.15){
+                            seg.labelX = xScale(seg.right - Math.abs(seg.value/2));
+                            seg.labelAnchor = "middle";
+                        }else{
+                            seg.labelX = xScale(seg.right) + 5;
+                            seg.labelAnchor = "right";
+                        }
+                        
+                    }
+                    for(i=0; i<segments.length; i++){
+                      setGraphicAttributes(segments[i], i)
+                    }
+                    console.log(segments)
+                    function createSvg(parentElement) {
+                        svg = d3.select(parentElement).append("svg");
+                        svg.append("g")
+                            .attr("class", "chart-group")
+                            .attr("transform", "translate(" + (margin.left + yAxisWidth) + "," + margin.top + ")");
+                        // setSvgSize
+                        svg.attr("width", chartWidth + yAxisWidth + margin.left + margin.right);
+                        svg.attr("height", xAxisHeight + chartHeight + margin.top + margin.bottom);
+                    }
+                    function wrap(text, width) {
+                        text.each(function() {
+                            var text = d3.select(this),
+                                words = text.text().split(/\s+/).reverse(),
+                                word,
+                                line = [],
+                                lineNumber = 0,
+                                lineHeight = 1.1, // ems
+                                x = text.attr("x"),
+                                y = text.attr("y"),
+                                dy = parseFloat(text.attr("dy")),
+                                tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em");
+                            while (word = words.pop()) {
+                                line.push(word);
+                                tspan.text(line.join(" "));
+                                if (tspan.node().getComputedTextLength() > width) {
+                                    line.pop();
+                                    tspan.text(line.join(" "));
+                                    line = [word];
+                                    tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+                                }
+                            }
+                        });
+                    }
+                    function drawXAxis() {
+                        var tickValues = [], maxTickVal;
+                        svg.select(".x.axis").remove();
+                        if (chartHeight > 0 && segments && segments.length > 0) {
+                            var xAxis = d3.svg.axis()
+                                    .scale(xScale)
+                                    .orient("bottom"),
+                                minVal = d3.min(segments, function (d) {
+                                    return d.end;
+                                }),
+                                maxVal = d3.max(segments, function (d) {
+                                    return d.end;
+                                });
+                            var lastVal = segments[segments.length-1].end;
+                            if (minVal > 0) {
+                                minVal = 0;
+                            }
+                            else if (maxVal < 0) {
+                                maxVal = 0;
+                            }
+                            tickValues = [lastVal];
+                            if (lastVal !== 0 ) {
+                                addTick(0, tickValues);
+                            }
+                            if (maxVal !== 0) {
+                                addTick(maxVal, tickValues);
+                            }
+                            if (minVal !== 0) {
+                                addTick(minVal, tickValues);
+                            }
+                            maxTickVal = d3.max(tickValues);
+                            xAxis.tickValues(tickValues)
+                                .tickFormat(function (d) {
+                                    var formatted;
+                                    switch(d) {
+                                        case maxTickVal :
+                                            formatted =  labelFormat(d) + " " + unit;
+                                            break;
+                                        case 0 :
+                                            formatted = "0";
+                                            break;
+                                        default :
+                                            formatted = labelFormat(d);
+                                    }
+                                    return formatted;
+                                });
+                            svg.select(".chart-group")
+                                .append("g")
+                                .attr("class", "x axis")
+                                .attr("transform", "translate(0," + chartHeight + ")")
+                                .call(xAxis);
+                        }
+                    }
+                    // checks to see if the tick values are too close together - very smart!
+                    function addTick( val, tickValues) {
+                        if ( tickValues.every( function (tv) {
+                            return (Math.abs(xScale(tv) - xScale(val)) > 50 );
+                        }) ) {
+                            tickValues.push(val);
+                        }
+                    }
+                    function drawYAxis() {
+                        var padding = -15;
+                        svg.select(".y.axis").remove();
+                        if ( chartHeight > 0 ) {
+                            var yAxis = d3.svg.axis()
+                                    .scale(yScale)
+                                    .orient("left")
+                                    .tickSize(1);
+                            svg.select(".chart-group")
+                                .append("g")
+                                .attr("class", "y axis")
+                                .attr("transform", "translate(" + padding + ",0)")
+                                .call(yAxis)
+                                .selectAll(".tick text")
+                                .call(wrap, yAxisWidth - 10);
+                        }
+                    }
+                    function defineEndMarker() {
+                        // Define marker as red triangle
+                        svg.append("defs").append("marker")
+                            .attr("id", "arrowhead")
+                            .attr("viewBox", "0 0 10 10")
+                            .attr("refX", 10)
+                            .attr("refY", 5)
+                            .attr("markerWidth", 6)
+                            .attr("markerHeight", 6)
+                            .attr("orient", "auto")
+                            .append("path")
+                            .attr("d", "M 0 0 L 10 5 L 0 10 z")
+                            .style("fill", d3.rgb(colour_plus).darker(2));
+                    }
+                    function drawStartingLine() {
+                        svg.select(".top.axis").remove();
+                        svg.select(".starting-line").remove();
+                        if (chartHeight > 0) {
+                            var xAxis = d3.svg.axis()
+                                .scale(xScale)
+                                .orient("top")
+                                .tickValues([0])
+                                .tickFormat(d3.format("d")),
+                                x0 = xScale(0),
+                                chartGroup = svg.select(".chart-group");
+                            chartGroup.append("g")
+                                .attr("class", "top axis")
+                                .call(xAxis);
+                            chartGroup.append("line")
+                                .attr("class", "starting-line")
+                                .attr("x1", x0)
+                                .attr("y1", 0)
+                                .attr("x2", x0)
+                                .attr("y2", chartHeight);
+                        }
+                    }
+                    function drawWaterfall() {
+                        var chartGroup, barGroup,
+                            lineColor = d3.rgb(colour_plus).darker(2);
+                        chartGroup = svg.select(".chart-group");
+                        if (segments && segments.length > 0) {
+                            // Draw bars
+                            barGroup = chartGroup.selectAll(".bar.g")
+                                .data(segments);
+                            barGroup.enter().append("g")
+                                .attr("class", "bar g");
+                            barGroup.exit().remove();
+                            barGroup.append("rect")
+                                .attr("class", "bar rect")
+                                .attr("height", segmentHeight)
+                                .attr("x", function (d) {
+                                    return d.x;
+                                })
+                                .attr("y", function (d) {
+                                    return d.y;
+                                })
+                                .attr("width", function (d) {
+                                    return d.width > 0 ? d.width : 0.1;
+                                })
+                                .style("fill", function(d){return d.value>0 ? colour_plus : colour_minus})//color)
+                                .style("stroke", function(d){return d.value>0 ? d3.rgb(colour_plus).darker(2) : d3.rgb(colour_minus).darker(2)});//lineColor);
+                            // Label bars
+                            barGroup.append("text")
+                                .attr("class", "bar text")
+                                .attr("x", function (d) {
+                                    return d.labelX;
+                                })
+                                .style("text-anchor", function (d) {
+                                    return d.labelAnchor;
+                                })
+                                .attr("y", function (d) {
+                                    return d.y + (segmentHeight / 2);
+                                })
+                                .attr("dy", ".5em")
+                                .text(function (d) {
+                                    return labelFormat(d.value);
+                                });
+                            // Connect bars
+                            barGroup.append("line")
+                                .attr("class", "bar line")
+                                .attr("x1", function (d) {
+                                    return d.endX;
+                                })
+                                .attr("y1", function (d) {
+                                    return d.y + segmentHeight;
+                                })
+                                .attr("x2", function (d) {
+                                    return d.endX;
+                                })
+                                .attr("y2", function (d) {
+                                    return d.y + segmentHeight + segmentPadding;
+                                })
+                                .style("stroke", lineColor);
+                        }
+                    }
+                    function drawEndMarker() {
+                        var connectors = svg.selectAll(".bar.line");
+                        if (connectors.size() > 0) {
+                            var lastIndex = connectors.size() - 1;
+                            console.log(connectors);
+                            connectors.filter(function(d, i) { return i === lastIndex; })
+                                        .attr("marker-end", "url(#arrowhead)");
+                        }
+                    }
+
+            createSvg("#waterfall");
+            drawXAxis();
+            drawYAxis();
+            drawStartingLine();
+            drawWaterfall();
+            defineEndMarker();
+            drawEndMarker();
+        }
+        
+// waterfall chart code adapted from https://github.com/uo-lca/FrontEnd by California Department of Resource Recycling and Recovery (CalRecycle)
+ 
+
+</script>
+</body>
+ 
+</html>
