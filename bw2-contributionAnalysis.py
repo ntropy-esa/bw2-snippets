@@ -25,7 +25,6 @@ style.available
 style.use('seaborn')
 
 
-## Search parameters, switch paramter values among a set, getSingleParam, searchActivity
 def ExportProjectParameters(f='ProjectParamExport.xlsx'):
     params = { i:p.dict for i,p in enumerate(ProjectParameter.select() )}
     pd.DataFrame.from_dict(params).T.to_excel('ProjectParamExport.xlsx')
