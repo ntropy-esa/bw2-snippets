@@ -667,12 +667,23 @@ def multi_recurse_tagged_database(
 
     inside = [exc for exc in inputs if exc["input"][0] in fg_databases] # inside = activities in fg_databases
     
-    outside = {
-        exc["input"]: exc["amount"] / scale * amount
-        for exc in inputs
-        if exc["input"][0] not in fg_databases ## calculates impacts for activities outside of fg_databases
-    } # this is a dict of functional units, ready for lca score calculation
-
+#    outside = {
+#        exc["input"]: exc["amount"] / scale * amount
+#        for exc in inputs
+#        if exc["input"][0] not in fg_databases ## calculates impacts for activities outside of fg_databases
+#    } # this is a dict of functional units, ready for lca score calculation
+    ## OBS: this creates a FU with all the BG activities and their amount, and the lca.score will be the sum of all of these
+    ## BUT: if several inputs are the same, only one of them will be considered, since dict cannot repeat entries
+    ## upgrade: check if already seen, and either add new or sum to existing amoutn
+    outside = {}
+    for exc in inputs:
+        if exc["input"][0] not in fg_databases:
+            if exc["input"] not in outside:
+                outside[ exc["input"] ] = exc["amount"] / scale * amount
+            else:
+                outside[ exc["input"] ] += exc["amount"] / scale * amount
+    
+    
     if outside:
         outside_scores = []
         for n,m in enumerate(methods):
